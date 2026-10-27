@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDOR Hunter &middot; Security Lab</title>
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<!-- ============ LOGIN / LANDING ============ -->
+<section id="landing" class="landing">
+  <div class="landing-grid">
+    <div class="landing-copy">
+      <div class="brand">
+        <span class="brand-mark">&#9875;</span>
+        <span class="brand-name">IDOR Hunter</span>
+      </div>
+      <h1>Insecure Direct Object Reference Security Lab</h1>
+      <p class="lead">
+        A controlled, local-only penetration testing environment for learning and verifying
+        Broken Access Control (OWASP A01:2021 &middot; API1:2023). Authenticate as User&nbsp;A,
+        User&nbsp;B, or the Administrator, then exploit, detect, and remediate a real IDOR
+        vulnerability against seeded synthetic data.
+      </p>
+      <ul class="feature-list">
+        <li><span class="dot dot-crit"></span> Switchable <strong>vulnerable</strong> / <strong>secure</strong> lab modes</li>
+        <li><span class="dot dot-ok"></span> Repeatable Java-based penetration test suite</li>
+        <li><span class="dot dot-warn"></span> Live incident detection &amp; administrator phone alerts</li>
+        <li><span class="dot dot-info"></span> Before/after remediation evidence &amp; guidance</li>
+      </ul>
+      <p class="ethics-note">
+        &#9888; For authorised educational use only, against this local lab's own synthetic data.
+        Never target systems you do not own or have explicit permission to test.
+      </p>
+    </div>
+
+    <div class="login-card card">
+      <h2>Sign in to the lab</h2>
+      <p class="muted">Choose a seeded account to explore different vantage points.</p>
+      <form id="login-form">
+        <label>Username
+          <input type="text" id="login-username" autocomplete="username" required>
+        </label>
+        <label>Password
+          <input type="password" id="login-password" autocomplete="current-password" required>
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+        <p id="login-error" class="form-error" hidden></p>
+      </form>
+      <div class="quick-accounts">
+        <p class="muted small">Quick-fill demo accounts</p>
+        <div class="quick-account-row">
+          <button class="chip" data-user="usera">User A</button>
+          <button class="chip" data-user="userb">User B</button>
+          <button class="chip" data-user="admin">Administrator</button>
+        </div>
+        <p class="muted small">Passwords are listed in README.md / util/LabCredentials.java</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app" class="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">&#9875;</span>
+      <span class="brand-name">IDOR Hunter</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="documents">Documents</button>
+      <button class="tab" data-tab="accounts">Accounts</button>
+      <button class="tab" data-tab="lab">Security Lab</button>
+      <button class="tab" data-tab="results">Test Results</button>
+      <button class="tab" data-tab="alerts">Incident Alerts</button>
+      <button class="tab" data-tab="settings">Settings</button>
+    </nav>
+    <div class="topbar-right">
+      <span id="mode-badge" class="badge badge-mode">SECURE MODE</span>
+      <span id="session-user" class="session-user"></span>
+      <button id="logout-btn" class="btn btn-ghost">Log out</button>
+    </div>
+  </header>
+
+  <main class="content" id="content">
+
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="view">
+      <h1>Security Dashboard</h1>
+      <p class="muted">Live posture of the IDOR Hunter lab, current session, and recent findings.</p>
+      <div class="stat-grid" id="dashboard-stats"></div>
+      <div class="panel-grid">
+        <div class="card">
+          <h3>Recent Incidents</h3>
+          <div id="dashboard-incidents" class="table-wrap"></div>
+        </div>
+        <div class="card">
+          <h3>Latest Test Run</h3>
+          <div id="dashboard-tests" class="table-wrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOCUMENTS -->
+    <section id="view-documents" class="view" hidden>
+      <h1>Document Management</h1>
+      <p class="muted">Browse your own documents, or open any document id directly &mdash; exactly how the IDOR flaw is explored.</p>
+      <div class="card">
+        <div class="doc-toolbar">
+          <input type="search" id="doc-search" placeholder="Filter your documents by title&hellip;">
+          <div class="doc-open-row">
+            <input type="number" id="doc-id-input" placeholder="Open document by ID (e.g. 3)" min="1">
+            <button id="doc-open-btn" class="btn btn-primary">Open</button>
+          </div>
+        </div>
+        <div id="doc-list" class="doc-grid"></div>
+      </div>
+      <div id="doc-preview-wrap"></div>
+    </section>
+
+    <!-- ACCOUNTS -->
+    <section id="view-accounts" class="view" hidden>
+      <h1>Lab Accounts</h1>
+      <p class="muted">Seeded, synthetic accounts used throughout this lab.</p>
+      <div id="accounts-table" class="table-wrap"></div>
+    </section>
+
+    <!-- SECURITY LAB -->
+    <section id="view-lab" class="view" hidden>
+      <h1>Security Lab</h1>
+      <p class="muted">Run the full IDOR penetration test suite against the live API and inspect each step's evidence.</p>
+      <div class="card lab-mode-card">
+        <div>
+          <h3>Current Lab Mode: <span id="lab-mode-text">SECURE</span></h3>
+          <p class="muted small" id="lab-mode-desc"></p>
+        </div>
+        <div class="lab-mode-switch" id="lab-mode-switch"></div>
+      </div>
+      <div class="card">
+        <div class="lab-actions">
+          <button id="run-tests-btn" class="btn btn-primary">&#9654; Run Penetration Test Suite</button>
+          <span id="run-tests-status" class="muted small"></span>
+        </div>
+        <div id="lab-run-results"></div>
+      </div>
+      <div class="card">
+        <h3>What each test demonstrates</h3>
+        <ul class="explain-list">
+          <li><strong>Own resource access</strong> &mdash; User A successfully reads a document they own.</li>
+          <li><strong>Unauthorised cross-user access (IDOR)</strong> &mdash; User A requests User B's private document by changing the id. In <em>vulnerable</em> mode this succeeds and leaks data; in <em>secure</em> mode the server rejects it.</li>
+          <li><strong>Nonexistent resource</strong> &mdash; requesting an id that doesn't exist returns 404, not a data leak.</li>
+          <li><strong>Unauthenticated request</strong> &mdash; no session cookie at all must be rejected with 401.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- TEST RESULTS -->
+    <section id="view-results" class="view" hidden>
+      <h1>Test Results</h1>
+      <p class="muted">Full history of penetration test runs, across both lab modes.</p>
+      <div id="results-table" class="table-wrap"></div>
+    </section>
+
+    <!-- INCIDENT ALERTS -->
+    <section id="view-alerts" class="view" hidden>
+      <h1>Incident Alerts</h1>
+      <p class="muted">Confirmed access-control violations and the administrator phone-call retry schedule triggered for each one.</p>
+      <div class="panel-grid">
+        <div class="card">
+          <h3>Security Incidents</h3>
+          <div id="incidents-table" class="table-wrap"></div>
+        </div>
+        <div class="card">
+          <h3>Alert Retry Cycles</h3>
+          <div id="alerts-table" class="table-wrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view" hidden>
+      <h1>Settings</h1>
+      <div class="card">
+        <h3>Session</h3>
+        <p id="settings-session-info" class="muted"></p>
+        <button id="settings-logout-btn" class="btn btn-ghost">Log out</button>
+      </div>
+      <div class="card" id="settings-admin-card" hidden>
+        <h3>Lab Mode (Administrator)</h3>
+        <p class="muted small">Switching requires <code>idorhunter.lab.allow-mode-switch=true</code> on the server. This never changes the application's shipped default.</p>
+        <div class="lab-mode-switch" id="settings-mode-switch"></div>
+      </div>
+      <div class="card">
+        <h3>Administrator Phone Alerts</h3>
+        <p class="muted small">
+          Configured via environment variables (see <code>.env.example</code>). By default a mock telephony
+          provider is used and no real calls are ever placed. Retry schedule: up to 3 consecutive call
+          attempts, 10 seconds apart, bounded by 6 scheduled intervals per alert cycle.
+        </p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

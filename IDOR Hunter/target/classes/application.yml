@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: idor-hunter
+  datasource:
+    url: jdbc:h2:mem:idorlab;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+logging:
+  level:
+    root: INFO
+    com.idorhunter: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# ---------------------------------------------------------------------------
+# IDOR Hunter Security Lab settings.
+# "vulnerable" mode intentionally disables server-side ownership checks on
+# the document API so the IDOR flaw can be demonstrated and tested.
+# "secure" mode enforces ownership + role based authorisation.
+# The default is "secure" so the application never ships insecure by
+# accident; the lab mode can only be switched at runtime when
+# allow-mode-switch is true (intended for local/dev use only).
+# ---------------------------------------------------------------------------
+idorhunter:
+  lab:
+    mode: secure
+    allow-mode-switch: true
+  alerts:
+    provider: mock            # mock | twilio
+    admin-phone-number: ${ADMIN_PHONE_NUMBER:+10000000000}
+    retry-interval-seconds: 10
+    max-attempts-per-cycle: 3
+    max-retry-intervals: 6
+    twilio:
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      from-number: ${TWILIO_FROM_NUMBER:}
