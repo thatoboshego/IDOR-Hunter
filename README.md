@@ -1,3 +1,5 @@
+## My verification code: WTC-22TQVZER
+
 # Cybersecurity Assessment Lab
 ### Network Reconnaissance, Firewall Assessment, and Web Application Penetration Testing
 
