@@ -429,3 +429,5 @@ Nmap is used to discover network exposure, UFW is configured and tested to contr
 The project highlights that network filtering and application authorisation address different threats. A secure system requires both appropriately configured network controls and correctly enforced application permissions.
 
 By documenting the initial configuration, test procedure, observed evidence, remediation, and repeat verification, the lab demonstrates a repeatable approach to identifying and addressing security weaknesses in a controlled environment.
+
+# Property of Thato Boshego
